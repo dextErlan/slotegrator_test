@@ -1,0 +1,5 @@
+.idea/
+.env
+docker/data/
+docker/logs/
+www/vendor/
