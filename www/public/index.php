@@ -3,6 +3,7 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 
+
 echo "Test project started!";
 
 function login($email, $password)
@@ -62,7 +63,7 @@ Class MoneyService {
         // isFundsAvailableForUser
         // setTaskForConvertToUserPoints
         // конвертация
-        // PointService->addPointForUser($points)
+        // PointServiceInterface->addPointForUser($points)
         // MoneyTransactionService->changeConvertTransactionStatus
         // unblockMoney ИЛИ refundMoney
     }

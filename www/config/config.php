@@ -1,16 +1,10 @@
 <?php
-return [
-    'database' => [
-        'paths' => [
-            'src/Entity',
-        ],
-        'params' => [
-            'driver'   => 'mysqli',
-            'host'     => 'mysql',
-            'port'     => '3306',
-            'user'     => 'admin',
-            'password' => 'secret',
-            'dbname'   => 'test_db',
-        ],
-    ],
-];
+
+use Laminas\ConfigAggregator\ConfigAggregator;
+use Laminas\ConfigAggregator\PhpFileProvider;
+
+$aggregator = new ConfigAggregator([
+    new PhpFileProvider(__DIR__ . '/autoload/{{,*.}global,{,*.}local}.php'),
+]);
+
+return $aggregator->getMergedConfig();

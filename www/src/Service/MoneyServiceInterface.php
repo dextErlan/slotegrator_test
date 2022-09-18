@@ -8,7 +8,7 @@ use App\Exception\BankAccountNotForUser;
 use App\Exception\FundsNotAvailableForUser;
 use Doctrine\ORM\EntityManager;
 
-class MoneyService implements GiftService
+class MoneyServiceInterface implements GiftServiceInterface
 {
     private UserMoney $userMoney;
     private EntityManager $entityManager;
@@ -82,7 +82,7 @@ class MoneyService implements GiftService
         // isFundsAvailableForUser
         // setTaskForConvertToUserPoints
         // конвертация
-        // PointService->addPointForUser($points)
+        // PointServiceInterface->addPointForUser($points)
         // MoneyTransactionService->changeConvertTransactionStatus
         // unblockMoney ИЛИ refundMoney
     }

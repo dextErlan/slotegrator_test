@@ -2,7 +2,7 @@
 
 namespace App\Service;
 
-class PointService implements GiftService
+class PointServiceInterface implements GiftServiceInterface
 {
     /**
      * Бонусные баллы (случайная сумма в интервале)

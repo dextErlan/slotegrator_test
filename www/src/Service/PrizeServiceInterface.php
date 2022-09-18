@@ -2,7 +2,7 @@
 
 namespace App\Service;
 
-class PrizeService implements GiftService
+class PrizeServiceInterface implements GiftServiceInterface
 {
     /**
      * Физический предмет (случайный предмет из списка)

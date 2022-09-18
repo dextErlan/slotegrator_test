@@ -2,7 +2,7 @@
 
 namespace App\Service;
 
-interface GiftService
+interface GiftServiceInterface
 {
     /**
      * Подарок назначется пользователю.
