@@ -4,7 +4,27 @@ require __DIR__ . '/../vendor/autoload.php';
 
 
 
+
+
+$request = Laminas\Diactoros\ServerRequestFactory::fromGlobals(
+    $_SERVER,
+    $_GET,
+    $_POST,
+    $_COOKIE,
+    $_FILES
+);
+
+
+$httpKernel =
+
+
+
+
+
+
+
 echo "Test project started!";
+
 
 function login($email, $password)
 {
@@ -63,7 +83,7 @@ Class MoneyService {
         // isFundsAvailableForUser
         // setTaskForConvertToUserPoints
         // конвертация
-        // PointServiceInterface->addPointForUser($points)
+        // PointService->addPointForUser($points)
         // MoneyTransactionService->changeConvertTransactionStatus
         // unblockMoney ИЛИ refundMoney
     }

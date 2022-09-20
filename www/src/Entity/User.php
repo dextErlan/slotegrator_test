@@ -30,12 +30,12 @@ class User
     /**
      * @ORM\OneToOne(targetEntity="UserMoney", mappedBy="user")
      */
-    private UserMoney $userMoney;
+    private ?UserMoney $userMoney;
 
     /**
      * @ORM\OneToOne(targetEntity="UserPoint", mappedBy="user")
      */
-    private UserPoint $userPoint;
+    private ?UserPoint $userPoint;
 
     /**
      * @ORM\OneToMany(targetEntity="UserPrize", mappedBy="user")
@@ -90,12 +90,12 @@ class User
         return $this->moneyTransactionConvert->toArray();
     }
 
-    public function getUserMoney(): UserMoney
+    public function getUserMoney(): ?UserMoney
     {
         return $this->userMoney;
     }
 
-    public function getUserPoint(): UserPoint
+    public function getUserPoint(): ?UserPoint
     {
         return $this->userPoint;
     }

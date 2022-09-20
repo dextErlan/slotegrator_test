@@ -2,37 +2,36 @@
 
 namespace App\Factory;
 
+use App\Entity\User;
 use App\Service\GiftServiceInterface;
 use App\Service\GiveawayService;
-use App\Service\MoneyServiceInterface;
-use App\Service\PointServiceInterface;
-use App\Service\PrizeServiceInterface;
+use App\Service\MoneyService;
+use App\Service\PointService;
+use App\Service\PrizeService;
+use App\Service\RequestToBankAPIService;
 use Doctrine\ORM\EntityManagerInterface;
-use Laminas\Authentication\AuthenticationServiceInterface;
 
 class GiftServiceFactory
 {
     private EntityManagerInterface $entityManager;
-    private AuthenticationServiceInterface $authService;
+    private RequestToBankAPIService $bankAPIService;
 
-    public function __construct(EntityManagerInterface $entityManager, AuthenticationServiceInterface $authService)
+    public function __construct(EntityManagerInterface $entityManager, RequestToBankAPIService $bankAPIService)
     {
         $this->entityManager = $entityManager;
-        $this->authService = $authService;
+        $this->bankAPIService = $bankAPIService;
     }
 
-    public function getGiftService(string $giftType): GiftServiceInterface
+    public function getGiftService(string $giftType, User $user): GiftServiceInterface
     {
-        $user = $this->authService->getIdentity();
-
         if (GiveawayService::GIFT_MONEY === $giftType) {
-            return new MoneyServiceInterface();
+            return new MoneyService($user, $this->entityManager, $this->bankAPIService);
         }
 
         if (GiveawayService::GIFT_PRIZE === $giftType) {
-            return new PrizeServiceInterface();
+            return new PrizeService($user, $this->entityManager);
         }
 
-        return new PointServiceInterface();
+        return new PointService($user, $this->entityManager);
     }
 }

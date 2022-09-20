@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use App\Entity\UserMoney;
-use App\Service\MoneyServiceInterface;
+use App\Service\MoneyService;
 use Laminas\Http\Client\Adapter\Test;
 
 class MoneyServiceTest extends Test
@@ -14,6 +14,6 @@ class MoneyServiceTest extends Test
         $userMoney->setMoneyInApp(10);
         $userMoney->setBlocked(0);
 
-        $moneyService = new MoneyServiceInterface($userMoney);
+        $moneyService = new MoneyService($userMoney);
     }
 }

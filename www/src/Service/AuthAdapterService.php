@@ -28,7 +28,7 @@ class AuthAdapterService implements AdapterInterface
             return new Result(
                 Result::FAILURE_IDENTITY_NOT_FOUND,
                 null,
-                ["Пользователь с почтой $this->username не найден!"]);
+                ["Логин и пароль не совпадают!"]);
         }
 
         if (!password_verify($this->password, $user->getPassword())) {

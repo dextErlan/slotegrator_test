@@ -10,7 +10,7 @@ interface GiftServiceInterface
      *
      * @param int $limitForMoney
      * @param int $limitForPrizes
-     * @return int
+     * @return array
      */
-    public function giveaway(int $limitForMoney, int $limitForPrizes): int;
+    public function giveaway(int $limitForMoney, int $limitForPrizes): array;
 }

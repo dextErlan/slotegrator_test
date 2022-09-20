@@ -2,7 +2,9 @@
 
 namespace App\Service;
 
+use App\Entity\User;
 use App\Factory\GiftServiceFactory;
+use Doctrine\ORM\EntityManagerInterface;
 
 class GiveawayService
 {
@@ -12,19 +14,31 @@ class GiveawayService
 
     private static int $limitForMoney = 100;
     private static int $limitForPrizes = 10;
+    private GiftServiceFactory $giftServiceFactory;
+
+    public function __construct(GiftServiceFactory $giftServiceFactory)
+    {
+        $this->giftServiceFactory = $giftServiceFactory;
+    }
 
     /**
      * Выбрать случайный подарок из доступных.
      * Присвоить его пользователю.
      * Уменьшить лимит подарков
+     *
+     * @param User $user
+     *
+     * @return string
      */
-    public function getRandomGift()
+    public function getRandomGift(User $user): string
     {
         $giftList = $this->getGiftList();
         $randomGift = array_rand($giftList);
-        $giftService = GiftServiceFactory::getGiftService($randomGift);
-        $giftCount = $giftService->giveaway(self::$limitForMoney, self::$limitForPrizes);
+        $giftService = $this->giftServiceFactory->getGiftService($randomGift, $user);
+        list($giftCount, $giftDescription) = $giftService->giveaway(self::$limitForMoney, self::$limitForPrizes);
         $this->decreaseLimit($randomGift, $giftCount);
+
+        return $giftDescription;
     }
 
     /**
