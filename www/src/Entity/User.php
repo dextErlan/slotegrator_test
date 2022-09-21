@@ -72,9 +72,9 @@ class User
         return $this->password;
     }
 
-    public function setPassword(string $password, int $cost = 10)
+    public function setPassword(string $password)
     {
-        $this->password = password_hash($password,PASSWORD_BCRYPT, $cost);
+        $this->password = password_hash($password,PASSWORD_DEFAULT);
     }
 
     public function getMoneyTransactionToBank(): array

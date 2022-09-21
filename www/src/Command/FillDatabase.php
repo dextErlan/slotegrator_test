@@ -5,6 +5,8 @@ namespace App\Command;
 use App\Entity\BankAccount;
 use App\Entity\Prize;
 use App\Entity\User;
+use App\Entity\UserMoney;
+use App\Entity\UserPoint;
 use Doctrine\ORM\EntityManager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -28,6 +30,17 @@ class FillDatabase extends Command
         $user->setEmail('first@user.test');
         $user->setPassword('password');
         $this->em->persist($user);
+
+        $userMoney = new UserMoney();
+        $userMoney->setUser($user);
+        $userMoney->setMoneyInApp(0);
+        $userMoney->setBlocked(0);
+        $this->em->persist($userMoney);
+
+        $userPoint = new UserPoint();
+        $userPoint->setUser($user);
+        $userPoint->setPoint(0);
+        $this->em->persist($userPoint);
 
         // Создаем пользователю банковские счета
         $bankAccount1 = new BankAccount();
