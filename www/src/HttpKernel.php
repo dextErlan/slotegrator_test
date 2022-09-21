@@ -20,9 +20,10 @@ class HttpKernel
     {
         $this->routerContainer = $routerContainer;
         $this->container = $container;
+        $this->setRoutes();
     }
 
-    public function handle(ServerRequestInterface $request): ResponseInterface
+    private function setRoutes()
     {
         $map = $this->routerContainer->getMap();
 
@@ -30,8 +31,10 @@ class HttpKernel
         $map->get('home', '/', IndexAction::class);
         $map->post('login', '/login', LoginAction::class);
         $map->get('giveaway', '/giveaway', GiveawayAction::class);
+    }
 
-
+    public function handle(ServerRequestInterface $request): ResponseInterface
+    {
         $matcher = $this->routerContainer->getMatcher();
 
         $route = $matcher->match($request);
@@ -45,6 +48,6 @@ class HttpKernel
 
         $action = $this->container->get($route->handler);
 
-        return $action($request);
+        return $action->handle($request);
     }
 }

@@ -11,17 +11,12 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class MoneyTransactionService
 {
-    const CONVERT_TO_POINT = 'convert';
-    const TRANSFER_TO_BANK = 'transfer';
-
     const STATUS_OPEN = 'open';
-    const STATUS_PENDING = 'pending';
     const STATUS_SUCCESS = 'success';
     const STATUS_REFUND = 'refund';
 
-    private $statusSequence = [
-        self::STATUS_OPEN => [self::STATUS_PENDING],
-        self::STATUS_PENDING => [self::STATUS_SUCCESS, self::STATUS_REFUND],
+    private array $statusSequence = [
+        self::STATUS_OPEN => [self::STATUS_SUCCESS, self::STATUS_REFUND],
     ];
     private EntityManagerInterface $entityManager;
 
@@ -35,8 +30,10 @@ class MoneyTransactionService
      *
      * @param User $user
      * @param int $sum
+     *
+     * @return MoneyTransactionConvert
      */
-    public function openConvertTransaction(User $user, int $sum)
+    public function openConvertTransaction(User $user, int $sum): MoneyTransactionConvert
     {
         $exchangeRate = $this->getExchangeRate();
 
@@ -47,11 +44,13 @@ class MoneyTransactionService
         $moneyTransactionConvert->setStatus(self::STATUS_OPEN);
 
         $this->saveEntity($moneyTransactionConvert);
+
+        return $moneyTransactionConvert;
     }
 
     public function getExchangeRate()
     {
-        $config = require __DIR__ . '../../config/exchangeRate.php';
+        $config = require __DIR__ . '/../../config/exchangeRate.php';
 
         return $config['exchangeRate'];
     }
@@ -62,8 +61,10 @@ class MoneyTransactionService
      * @param User $user
      * @param int $sum
      * @param BankAccount $accountNumber
+     *
+     * @return MoneyTransactionToBank
      */
-    public function openTransferTransaction(User $user, int $sum, BankAccount $accountNumber)
+    public function openTransferTransaction(User $user, int $sum, BankAccount $accountNumber): MoneyTransactionToBank
     {
         $moneyTransactionToBank = new MoneyTransactionToBank();
         $moneyTransactionToBank->setUser($user);
@@ -72,60 +73,42 @@ class MoneyTransactionService
         $moneyTransactionToBank->setStatus(self::STATUS_OPEN);
 
         $this->saveEntity($moneyTransactionToBank);
+
+        return $moneyTransactionToBank;
     }
 
     /**
-     * @param int $transactionId
+     * @param MoneyTransactionToBank $transactionToBank
      * @param string $newStatus
      * @throws ChangeTransactionStatusException
      */
-    public function changeTransferTransactionStatus(int $transactionId, string $newStatus)
+    public function changeTransferTransactionStatus(MoneyTransactionToBank $transactionToBank, string $newStatus)
     {
-        $moneyTransactionToBank = $this->getTransactionToBank($transactionId);
-        $currentStatus = $moneyTransactionToBank->getStatus();
+        $currentStatus = $transactionToBank->getStatus();
 
         if (!isset($this->statusSequence[$currentStatus]) || ! in_array($newStatus, $this->statusSequence[$currentStatus])) {
-            throw new ChangeTransactionStatusException("Ошибка смены статуса с $currentStatus на $newStatus в MoneyTransactionToBank id=$transactionId");
+            throw new ChangeTransactionStatusException("Ошибка смены статуса с $currentStatus на $newStatus в MoneyTransactionToBank id={$transactionToBank->getId()}");
         }
 
-        $moneyTransactionToBank->setStatus($newStatus);
-        $this->saveEntity($moneyTransactionToBank);
+        $transactionToBank->setStatus($newStatus);
+        $this->saveEntity($transactionToBank);
     }
 
     /**
-     * @param int $transactionId
+     * @param MoneyTransactionConvert $transactionConvert
      * @param $newStatus
      * @throws ChangeTransactionStatusException
      */
-    public function changeConvertTransactionStatus(int $transactionId,  $newStatus)
+    public function changeConvertTransactionStatus(MoneyTransactionConvert $transactionConvert,  $newStatus)
     {
-        $moneyTransactionConvert = $this->getTransactionConvert($transactionId);
-        $currentStatus = $moneyTransactionConvert->getStatus();
+        $currentStatus = $transactionConvert->getStatus();
 
         if (!isset($this->statusSequence[$currentStatus]) || ! in_array($newStatus, $this->statusSequence[$currentStatus])) {
-            throw new ChangeTransactionStatusException("Ошибка смены статуса с $currentStatus на $newStatus в MoneyTransactionConvert id=$transactionId");
+            throw new ChangeTransactionStatusException("Ошибка смены статуса с $currentStatus на $newStatus в MoneyTransactionConvert id={$transactionConvert->getId()}");
         }
 
-        $moneyTransactionConvert->setStatus($newStatus);
-        $this->saveEntity($moneyTransactionConvert);
-    }
-
-    /**
-     * @param int $transactionId
-     * @return MoneyTransactionToBank|null
-     */
-    private function getTransactionToBank(int $transactionId): ?MoneyTransactionToBank
-    {
-        return $this->entityManager->find('MoneyTransactionToBank', $transactionId);
-    }
-
-    /**
-     * @param int $transactionId
-     * @return MoneyTransactionConvert|null
-     */
-    private function getTransactionConvert(int $transactionId): ?MoneyTransactionConvert
-    {
-        return $this->entityManager->find('MoneyTransactionConvert', $transactionId);
+        $transactionConvert->setStatus($newStatus);
+        $this->saveEntity($transactionConvert);
     }
 
     /**

@@ -7,23 +7,26 @@ use App\Entity\MoneyTransactionToBank;
 use App\Entity\User;
 use App\Entity\UserMoney;
 use App\Exception\BankAccountNotForUser;
+use App\Exception\BankAPIException;
 use App\Exception\BlockedSumNotValid;
 use App\Exception\FundsNotAvailableForUser;
-use Doctrine\ORM\EntityManager;
+use App\Exception\TransferException;
+use Doctrine\ORM\EntityManagerInterface;
+use Exception;
 
 class MoneyService implements GiftServiceInterface
 {
     private User $user;
-    private EntityManager $entityManager;
+    private EntityManagerInterface $entityManager;
     private UserMoney $userMoney;
-    private RequestToBankAPIService $bankAPIService;
 
-    public function __construct(User $user, EntityManager $entityManager, RequestToBankAPIService $bankAPIService)
-    {
+    public function __construct(
+        User $user,
+        EntityManagerInterface $entityManager
+    ) {
         $this->user = $user;
         $this->entityManager = $entityManager;
         $this->userMoney = $this->getUserMoney();
-        $this->bankAPIService = $bankAPIService;
     }
 
     /**
@@ -31,17 +34,132 @@ class MoneyService implements GiftServiceInterface
      * Подарок назначется пользователю.
      * Размер подарка не должен превышать переданные лимиты.
      *
-     * @param int $limitForMoney
-     * @param int $limitForPrizes
+     * @param int $limitForGifts
      * @return array
+     * @throws \Doctrine\ORM\Exception\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
      */
-    public function giveaway(int $limitForMoney, int $limitForPrizes): array
+    public function giveaway(int $limitForGifts): array
     {
-        $sum = $this->getSumForGiveaway($limitForMoney);
-        $this->userMoney->setMoneyInApp($this->userMoney->getMoneyInApp() + $sum);
-        $this->saveUserMoney();
+        $sum = $this->getSumForGiveaway($limitForGifts);
+        $this->addMoney($sum);
 
         return [$sum, "$sum долларов"];
+    }
+
+    /**
+     * @param int $sum
+     * @throws \Doctrine\ORM\Exception\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
+    public function addMoney(int $sum)
+    {
+        $this->userMoney->setMoneyInApp($this->userMoney->getMoneyInApp() + $sum);
+        $this->saveUserMoney();
+    }
+
+    /**
+     * Поставить задачу на перевод денег в Банк.
+     *
+     * @param int $sum
+     * @param BankAccount $accountNumber
+     * @return MoneyTransactionToBank
+     * @throws BankAccountNotForUser
+     * @throws FundsNotAvailableForUser
+     * @throws \Doctrine\ORM\Exception\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
+    public function setTaskForTransferMoney(int $sum, BankAccount $accountNumber): MoneyTransactionToBank
+    {
+        if (!$this->isUserBankAccount($accountNumber)) {
+            throw new BankAccountNotForUser("Банковский счет " . $accountNumber->getAccountNumber() . " не найден у пользователя с id=" . $this->user->getId());
+        }
+        $this->blockMoney($sum);
+
+        $moneyTransactionService = new MoneyTransactionService($this->entityManager);
+
+        return $moneyTransactionService->openTransferTransaction($this->user, $sum, $accountNumber);
+    }
+
+    /**
+     * Перевод денег в Банк.
+     *
+     * @param MoneyTransactionToBank $transactionToBank
+     * @param RequestToBankAPIServiceInterface $bankAPIService
+     * @throws BankAccountNotForUser
+     * @throws BlockedSumNotValid
+     * @throws TransferException
+     * @throws \App\Exception\ChangeTransactionStatusException
+     * @throws \Doctrine\ORM\Exception\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
+    public function transferMoney(MoneyTransactionToBank $transactionToBank, RequestToBankAPIServiceInterface $bankAPIService){
+        $accountNumber = $transactionToBank->getBankAccount();
+        $sum = $transactionToBank->getSum();
+
+        if (!$this->isUserBankAccount($accountNumber)) {
+            throw new BankAccountNotForUser("Банковский счет " . $accountNumber->getAccountNumber() . " не найден у пользователя с id=" . $this->user->getId());
+        }
+
+        if ($this->userMoney->getBlocked() < $sum) {
+            throw new BlockedSumNotValid("Заблокированная сумма меньше $sum у пользователя с id=" . $this->user->getId());
+        }
+
+        $transactionService = new MoneyTransactionService($this->entityManager);
+
+        try {
+            $bankAPIService->fetchTransferMoneyToBank($sum, $accountNumber->getAccountNumber());
+        } catch (BankAPIException $e) {
+            $this->refundMoney($sum);
+            $transactionService->changeTransferTransactionStatus($transactionToBank, MoneyTransactionService::STATUS_REFUND);
+
+            throw new TransferException("Перевод денег отменен");
+        }
+
+        $this->unblockMoney($sum);
+
+        $transactionService->changeTransferTransactionStatus($transactionToBank, MoneyTransactionService::STATUS_SUCCESS);
+    }
+
+    /**
+     * @param int $sum
+     * @throws BlockedSumNotValid
+     * @throws FundsNotAvailableForUser
+     * @throws TransferException
+     * @throws \App\Exception\ChangeTransactionStatusException
+     * @throws \Doctrine\ORM\Exception\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
+    public function convertToUserPoints(int $sum, PointServiceInterface $pointService){
+        $this->blockMoney($sum);
+
+        $moneyTransactionService = new MoneyTransactionService($this->entityManager);
+        $moneyTransactionConvert = $moneyTransactionService->openConvertTransaction($this->user, $sum);
+
+        $points = intval($moneyTransactionConvert->getExchangeRate() * $sum);
+
+        try {
+            $pointService->addPoint($points);
+        }catch (Exception $e) {
+            $this->refundMoney($sum);
+            $moneyTransactionService->changeConvertTransactionStatus($moneyTransactionConvert, MoneyTransactionService::STATUS_REFUND);
+
+            throw new TransferException("Конверация денег отменена");
+        }
+
+        $moneyTransactionService->changeConvertTransactionStatus($moneyTransactionConvert, MoneyTransactionService::STATUS_SUCCESS);
+        $this->unblockMoney($sum);
+    }
+
+    /**
+     * Проверить доступные средства.
+     *
+     * @param int $sum
+     * @return bool
+     */
+    public function isFundsAvailableForUser(int $sum): bool
+    {
+        return $this->userMoney->getMoneyInApp() >= $sum;
     }
 
     /**
@@ -71,16 +189,6 @@ class MoneyService implements GiftServiceInterface
         $this->entityManager->flush();
     }
 
-    public function setTaskForTransferMoney(int $sum, BankAccount $accountNumber){
-        if (!$this->isUserBankAccount($accountNumber)) {
-            throw new BankAccountNotForUser("Банковский счет " . $accountNumber->getAccountNumber() . " не найден у пользователя с id=" . $this->user->getId());
-        }
-        $this->blockMoney($sum);
-
-        $moneyTransactionService = new MoneyTransactionService($this->entityManager);
-        $moneyTransactionService->openTransferTransaction($this->user, $sum, $accountNumber);
-    }
-
     /**
      * Проверка принадлежит ли счет пользователю.
      *
@@ -92,52 +200,23 @@ class MoneyService implements GiftServiceInterface
         $bankAccount = $this->entityManager
             ->getRepository(BankAccount::class)
             ->findOneBy([
-                'user_id' => $this->user->getId(),
+                'user' => $this->user,
                 'accountNumber' => $accountNumber->getAccountNumber(),
             ]);
 
         return !empty($bankAccount);
     }
 
-    public function transferMoney(MoneyTransactionToBank $transactionToBank){
-        if (!$this->isUserBankAccount($accountNumber)) {
-            throw new BankAccountNotForUser("Банковский счет " . $accountNumber->getAccountNumber() . " не найден у пользователя с id=" . $this->user->getId());
-        }
-
-        if ($this->userMoney->getBlocked() < $sum) {
-            throw new BlockedSumNotValid("Заблокированная сумма меньше $sum у пользователя с id=" . $this->user->getId());
-        }
-        $this->bankAPIService->fetchTransferMoneyToBank($sum, $accountNumber->getAccountNumber());
-        // unblockMoney ИЛИ refundMoney
-        // MoneyTransactionService->changeTransferTransactionStatus
-    }
-
-    public function convertToUserPoints(User $user, int $sum){
-        // isFundsAvailableForUser
-        // setTaskForConvertToUserPoints
-        // конвертация
-        // PointService->addPointForUser($points)
-        // MoneyTransactionService->changeConvertTransactionStatus
-        // unblockMoney ИЛИ refundMoney
-    }
-
-    public function setTaskForConvertToUserPoints(User $user, int $sum){
-        // blockMoney
-        // MoneyTransactionService->openConvertTransaction($user, $sum).
-    }
-
     /**
-     * @param string $transactionType
-     * @param int $transactionId
      * @param int $sum
      * @throws BlockedSumNotValid
      * @throws \Doctrine\ORM\Exception\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    private function unblockMoney(string $transactionType, int $transactionId, int $sum)
+    private function unblockMoney(int $sum)
     {
         if ($this->userMoney->getBlocked() < $sum) {
-            throw new BlockedSumNotValid("Заблокированная сумма меньше $sum у пользователя с id=" . $this->user->getId());
+            throw new BlockedSumNotValid("Заблокированная сумма меньше чем $sum у пользователя с id=" . $this->user->getId());
         }
 
         $this->userMoney->setBlocked($this->userMoney->getBlocked() - $sum);
@@ -157,11 +236,26 @@ class MoneyService implements GiftServiceInterface
         }
 
         $this->userMoney->setBlocked($sum);
+        $this->userMoney->setMoneyInApp($this->userMoney->getMoneyInApp() - $sum);
         $this->saveUserMoney();
     }
 
-    //Возврат на счет пользователя, после не успешной транзакции
-    private function refundMoney(){}
+    /**
+     * @param int $sum
+     * @throws BlockedSumNotValid
+     * @throws \Doctrine\ORM\Exception\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
+    private function refundMoney(int $sum)
+    {
+        if ($this->userMoney->getBlocked() < $sum) {
+            throw new BlockedSumNotValid("Заблокированная сумма меньше чем $sum у пользователя с id=" . $this->user->getId());
+        }
+
+        $this->userMoney->setBlocked($this->userMoney->getBlocked() - $sum);
+        $this->userMoney->setMoneyInApp($this->userMoney->getMoneyInApp() + $sum);
+        $this->saveUserMoney();
+    }
 
     /**
      * Случайный выбор размера выйгрыша, от 1 до переданного лимита
@@ -176,16 +270,5 @@ class MoneyService implements GiftServiceInterface
         }
 
         return 0;
-    }
-
-    /**
-     * Проверить доступные средства.
-     *
-     * @param int $sum
-     * @return bool
-     */
-    public function isFundsAvailableForUser(int $sum): bool
-    {
-        return $this->userMoney->getMoneyInApp() >= $sum;
     }
 }

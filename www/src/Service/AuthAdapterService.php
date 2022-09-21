@@ -2,25 +2,27 @@
 
 namespace App\Service;
 
-use App\Repository\UserRepository;
+use Doctrine\ORM\EntityRepository;
 use Laminas\Authentication\Adapter\AdapterInterface;
-use Laminas\Authentication\Adapter\Exception\ExceptionInterface;
 use Laminas\Authentication\Result;
 
 class AuthAdapterService implements AdapterInterface
 {
-    private UserRepository $userRepository;
+    private EntityRepository $userRepository;
     private string $username;
     private string $password;
 
-    public function __construct(UserRepository $userRepository, string $username, string $password)
+    public function __construct(EntityRepository $userRepository, string $username, string $password)
     {
         $this->userRepository = $userRepository;
         $this->username = $username;
         $this->password = $password;
     }
 
-    public function authenticate()
+    /**
+     * @return Result
+     */
+    public function authenticate(): Result
     {
         $user = $this->userRepository->findOneBy(['email' => $this->username]);
 

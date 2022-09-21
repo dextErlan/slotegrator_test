@@ -2,8 +2,9 @@
 
 namespace App\Controller\Action;
 
-use App\Repository\UserRepository;
+use App\Entity\User;
 use App\Service\AuthAdapterService;
+use Doctrine\ORM\EntityManagerInterface;
 use Laminas\Authentication\AuthenticationServiceInterface;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -13,24 +14,27 @@ use Psr\Http\Server\RequestHandlerInterface;
 class LoginAction implements RequestHandlerInterface
 {
     private AuthenticationServiceInterface $authService;
-    private UserRepository $userRepository;
+    private EntityManagerInterface $em;
 
-    public function __construct(AuthenticationServiceInterface $authService, UserRepository $userRepository)
+    public function __construct(AuthenticationServiceInterface $authService, EntityManagerInterface $em)
     {
         $this->authService = $authService;
-        $this->userRepository = $userRepository;
+        $this->em = $em;
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         if ($this->authService->hasIdentity()) {
-            return new JsonResponse("Вы вошли в систему!");
+            return new JsonResponse("Вы уже вошли в систему!");
         }
 
-        $username = $request->getAttribute('email');
-        $password = $request->getAttribute('password');
+        $parsedBody = $request->getParsedBody();
 
-        $authAdapter = new AuthAdapterService($this->userRepository, $username, $password);
+        if (empty($parsedBody['email']) || empty($parsedBody['password'])) {
+            return new JsonResponse(['error' => ['Не переданы имя пользователя и пароль!']], 400);
+        }
+
+        $authAdapter = new AuthAdapterService($this->em->getRepository(User::class), $parsedBody['email'], $parsedBody['password']);
 
         $result = $this->authService->authenticate($authAdapter);
 

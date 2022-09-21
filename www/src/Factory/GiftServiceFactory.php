@@ -14,18 +14,16 @@ use Doctrine\ORM\EntityManagerInterface;
 class GiftServiceFactory
 {
     private EntityManagerInterface $entityManager;
-    private RequestToBankAPIService $bankAPIService;
 
-    public function __construct(EntityManagerInterface $entityManager, RequestToBankAPIService $bankAPIService)
+    public function __construct(EntityManagerInterface $entityManager)
     {
         $this->entityManager = $entityManager;
-        $this->bankAPIService = $bankAPIService;
     }
 
     public function getGiftService(string $giftType, User $user): GiftServiceInterface
     {
         if (GiveawayService::GIFT_MONEY === $giftType) {
-            return new MoneyService($user, $this->entityManager, $this->bankAPIService);
+            return new MoneyService($user, $this->entityManager);
         }
 
         if (GiveawayService::GIFT_PRIZE === $giftType) {

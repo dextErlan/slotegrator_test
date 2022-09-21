@@ -2,18 +2,93 @@
 
 namespace App\Service;
 
+use App\Entity\Prize;
+use App\Entity\User;
+use App\Entity\UserPrize;
+use App\Exception\AvailablePrizesEmptyException;
+use App\Exception\LimitForPrizesEndException;
+use App\Repository\PrizeRepository;
+use Doctrine\ORM\EntityManagerInterface;
+
 class PrizeService implements GiftServiceInterface
 {
+    private User $user;
+    private EntityManagerInterface $entityManager;
+
+    public function __construct(User $user, EntityManagerInterface $entityManager)
+    {
+        $this->user = $user;
+        $this->entityManager = $entityManager;
+    }
+
     /**
      * Физический предмет (случайный предмет из списка)
      *
-     * @param int $limitForMoney
-     * @param int $limitForPrizes
-     * @return int
+     * @param int $limitForGifts
+     * @return array
+     * @throws \Doctrine\ORM\Exception\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
      */
-    public function giveaway(int $limitForMoney, int $limitForPrizes): int
+    public function giveaway(int $limitForGifts): array
     {
-        // TODO: Implement giveaway() method.
-        return 1;
+        $prize = $this->getPrizeForGiveaway($limitForGifts);
+
+        $userPrize = new UserPrize();
+        $userPrize->setUser($this->user);
+        $userPrize->setStatus(UserPrize::STATUS_WIN);
+        $userPrize->setPrize($prize);
+
+        $this->saveEntity($userPrize);
+
+        $this->decreaseNumberForPrize($prize);
+
+        return [1, $prize->getName()];
+    }
+
+    /**
+     * @throws \Doctrine\ORM\Exception\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
+    private function saveEntity($entity)
+    {
+        $this->entityManager->persist($entity);
+        $this->entityManager->flush();
+    }
+
+    /**
+     * Случайный предмет из списка.
+     *
+     * @param int $limitForPrizes
+     * @return Prize
+     * @throws AvailablePrizesEmptyException
+     */
+    private function getPrizeForGiveaway(int $limitForPrizes): Prize
+    {
+        if ($limitForPrizes <= 0) {
+            throw new LimitForPrizesEndException("Лимит на призы исчерпан!");
+        }
+
+        /** @var $prizeRepository PrizeRepository */
+        $prizeRepository = $this->entityManager->getRepository(Prize::class);
+        $prizes = $prizeRepository->getAvailablePrizes();
+
+        if (empty($prizes)) {
+            throw new AvailablePrizesEmptyException('Не подарков для розыгрыша!');
+        }
+
+        $randIndex = rand(0, count($prizes)-1);
+
+        return $prizes[$randIndex];
+    }
+
+    /**
+     * @param Prize $prize
+     * @throws \Doctrine\ORM\Exception\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
+    private function decreaseNumberForPrize(Prize $prize)
+    {
+        $prize->setNumber($prize->getNumber() - 1);
+        $this->saveEntity($prize);
     }
 }

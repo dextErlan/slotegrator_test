@@ -48,6 +48,8 @@ class User
         $this->bankAccount = new ArrayCollection();
         $this->moneyTransactionConvert = new ArrayCollection();
         $this->userPrize = new ArrayCollection();
+        $this->userPoint = null;
+        $this->userMoney = null;
     }
 
     public function getId(): ?int
@@ -70,9 +72,9 @@ class User
         return $this->password;
     }
 
-    public function setPassword(string $password)
+    public function setPassword(string $password, int $cost = 10)
     {
-        $this->password = password_hash($password,PASSWORD_DEFAULT);
+        $this->password = password_hash($password,PASSWORD_BCRYPT, $cost);
     }
 
     public function getMoneyTransactionToBank(): array

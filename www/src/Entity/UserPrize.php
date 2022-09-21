@@ -7,6 +7,10 @@ use Doctrine\ORM\Mapping as ORM;
 /** @ORM\Entity */
 class UserPrize
 {
+    const STATUS_WIN = 'win';
+    const STATUS_SEND = 'send';
+    const STATUS_REFUSED = 'refused';
+
     /** @ORM\Id @ORM\Column(type="integer") @ORM\GeneratedValue */
     private $id;
 
@@ -16,7 +20,7 @@ class UserPrize
     /** @ORM\ManyToOne(targetEntity="User", inversedBy="userPrize") */
     private User $user;
 
-    /** @ORM\OneToOne(targetEntity="Prize") */
+    /** @ORM\ManyToOne(targetEntity="Prize") */
     private Prize $prize;
 
     public function getId(): ?int

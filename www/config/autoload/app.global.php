@@ -1,17 +1,17 @@
 <?php
 
 use App\Command\FillDatabase;
+use App\Command\SendMoneyToBank;
 use App\Controller\Action\GiveawayAction;
 use App\Controller\Action\IndexAction;
 use App\Controller\Action\LoginAction;
-use App\Entity\User;
 use App\Factory\GiftServiceFactory;
-use App\Repository\UserRepository;
+use App\HttpKernel;
 use App\Service\GiveawayService;
 use App\Service\RequestToBankAPIService;
+use Aura\Router\RouterContainer;
 use Doctrine\ORM\EntityManagerInterface;
 use Laminas\Authentication\AuthenticationService;
-use Laminas\Authentication\AuthenticationServiceInterface;
 use Laminas\ServiceManager\AbstractFactory\ReflectionBasedAbstractFactory;
 use Laminas\ServiceManager\Factory\InvokableFactory;
 use Psr\Container\ContainerInterface;
@@ -23,23 +23,32 @@ return [
             ReflectionBasedAbstractFactory::class,
         ],
         'factories' => [
+            HttpKernel::class => function(ContainerInterface $container, $requestedName) {
+                $routerContainer = $container->get(RouterContainer::class);
+
+                return new $requestedName($routerContainer, $container);
+            },
+            RouterContainer::class => InvokableFactory::class,
+            // console
             FillDatabase::class => function(ContainerInterface $container, $requestedName) {
                 $dependency = $container->get(EntityManagerInterface::class);
 
                 return new $requestedName($dependency);
             },
-            GiftServiceFactory::class => function(ContainerInterface $container, $requestedName) {
+            SendMoneyToBank::class => function(ContainerInterface $container, $requestedName) {
                 $em = $container->get(EntityManagerInterface::class);
                 $bankAPIService = $container->get(RequestToBankAPIService::class);
 
                 return new $requestedName($em, $bankAPIService);
             },
-            UserRepository::class => function(ContainerInterface $container, $requestedName) {
-                $dependency = $container->get(EntityManagerInterface::class);
+            // factory
+            GiftServiceFactory::class => function(ContainerInterface $container, $requestedName) {
+                $em = $container->get(EntityManagerInterface::class);
 
-                return new $requestedName($dependency, User::class);
+                return new $requestedName($em);
             },
-            AuthenticationServiceInterface::class => AuthenticationService::class,
+            // service
+            AuthenticationService::class => InvokableFactory::class,
             GiveawayService::class => function(ContainerInterface $container, $requestedName) {
                 $dependency = $container->get(GiftServiceFactory::class);
 
@@ -50,21 +59,21 @@ return [
 
                 return new $requestedName($dependency);
             },
+            // action
             IndexAction::class =>  InvokableFactory::class,
             LoginAction::class =>  function(ContainerInterface $container, $requestedName) {
-                $authService = $container->get(AuthenticationServiceInterface::class);
-                $userRepository = $container->get(UserRepository::class);
+                $authService = $container->get(AuthenticationService::class);
+                $em = $container->get(EntityManagerInterface::class);
 
-                return new $requestedName($authService, $userRepository);
+                return new $requestedName($authService, $em);
             },
             GiveawayAction::class =>  function(ContainerInterface $container, $requestedName) {
-                $authService = $container->get(AuthenticationServiceInterface::class);
+                $authService = $container->get(AuthenticationService::class);
                 $giveawayService = $container->get(GiveawayService::class);
 
                 return new $requestedName($authService, $giveawayService);
             },
         ],
     ],
-
     'debug' => false,
 ];
