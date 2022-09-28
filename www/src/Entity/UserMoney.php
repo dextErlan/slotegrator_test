@@ -62,4 +62,15 @@ class UserMoney
 
         return $this;
     }
+
+    /**
+     * Проверить доступные средства.
+     *
+     * @param int $sum
+     * @return bool
+     */
+    public function isFundsAvailableForUser(int $sum): bool
+    {
+        return $this->moneyInApp >= $sum;
+    }
 }

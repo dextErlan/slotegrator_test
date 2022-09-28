@@ -7,6 +7,10 @@ use Doctrine\ORM\Mapping as ORM;
 /** @ORM\Entity */
 class MoneyTransactionConvert
 {
+    const STATUS_OPEN = 'open';
+    const STATUS_SUCCESS = 'success';
+    const STATUS_REFUND = 'refund';
+
     /** @ORM\Id @ORM\Column(type="integer") @ORM\GeneratedValue */
     private ?int $id;
 
@@ -25,6 +29,13 @@ class MoneyTransactionConvert
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function setId(int $id): self
+    {
+        $this->id = $id;
+
+        return $this;
     }
 
     public function getSum(): int

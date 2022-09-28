@@ -8,7 +8,7 @@ use App\Service\GiveawayService;
 use App\Service\MoneyService;
 use App\Service\PointService;
 use App\Service\PrizeService;
-use App\Service\RequestToBankAPIService;
+use App\Service\Money\UserMoneyService;
 use Doctrine\ORM\EntityManagerInterface;
 
 class GiftServiceFactory
@@ -23,7 +23,7 @@ class GiftServiceFactory
     public function getGiftService(string $giftType, User $user): GiftServiceInterface
     {
         if (GiveawayService::GIFT_MONEY === $giftType) {
-            return new MoneyService($user, $this->entityManager);
+            return new MoneyService($user, (new UserMoneyService($user)), $this->entityManager);
         }
 
         if (GiveawayService::GIFT_PRIZE === $giftType) {

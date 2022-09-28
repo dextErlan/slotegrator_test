@@ -59,4 +59,9 @@ class BankAccount
     {
         return $this->moneyTransactionToBank->toArray();
     }
+
+    public function isBelongsToUser(User $user): bool
+    {
+        return $user === $this->user;
+    }
 }
