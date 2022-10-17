@@ -137,13 +137,13 @@ class MoneyService implements GiftServiceInterface
 
     /**
      * @param int $sum
-     * @param PointServiceInterface $pointService
+     * @param PointService $pointService
      * @throws BlockedSumNotValid
      * @throws FundsNotAvailableForUser
      * @throws TransferException
      * @throws \App\Exception\ChangeTransactionStatusException
      */
-    public function convertToUserPoints(int $sum, PointServiceInterface $pointService){
+    public function convertToUserPoints(int $sum, PointService $pointService){
         $this->userMoneyService->blockMoney($sum);
         $this->saveEntity($this->userMoneyService->getUserMoney());
 

@@ -6,7 +6,7 @@ use App\Entity\User;
 use App\Entity\UserPoint;
 use Doctrine\ORM\EntityManagerInterface;
 
-class PointService implements GiftServiceInterface, PointServiceInterface
+class PointService implements GiftServiceInterface
 {
     private User $user;
     private EntityManagerInterface $entityManager;
