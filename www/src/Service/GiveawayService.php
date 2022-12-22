@@ -34,7 +34,7 @@ class GiveawayService
         $giftList = $this->getGiftList();
         $randomGift = $giftList[array_rand($giftList)];
         $giftService = $this->giftServiceFactory->getGiftService($randomGift, $user);
-        list($giftCount, $giftDescription) = $giftService->giveaway(self::$limitForMoney, self::$limitForPrizes);
+        list($giftCount, $giftDescription) = $giftService->giveaway(self::$limitForMoney);
         $this->decreaseLimit($randomGift, $giftCount);
 
         return $giftDescription;

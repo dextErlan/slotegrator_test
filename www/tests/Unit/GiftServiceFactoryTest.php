@@ -14,12 +14,11 @@ use PHPUnit\Framework\TestCase;
 
 class GiftServiceFactoryTest extends TestCase
 {
-    public function test()
+    public function test(): void
     {
         $entityManager = $this->createMock(EntityManagerInterface::class);
-        $bankAPIService = $this->createMock(RequestToBankAPIService::class);
 
-        $giftServiceFactory = new GiftServiceFactory($entityManager, $bankAPIService);
+        $giftServiceFactory = new GiftServiceFactory($entityManager);
         $user = new User();
 
         $moneyService = $giftServiceFactory->getGiftService(GiveawayService::GIFT_MONEY, $user);

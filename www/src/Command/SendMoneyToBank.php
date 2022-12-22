@@ -3,9 +3,8 @@
 namespace App\Command;
 
 use App\Entity\MoneyTransactionToBank;
+use App\Service\Money\UserMoneyService;
 use App\Service\MoneyService;
-use App\Service\MoneyTransactionService;
-use App\Service\PointService;
 use App\Service\RequestToBankAPIService;
 use Doctrine\ORM\EntityManager;
 use Symfony\Component\Console\Command\Command;
@@ -28,11 +27,11 @@ class SendMoneyToBank extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $transactions = $this->em->getRepository(MoneyTransactionToBank::class)
-            ->findBy(['status' => MoneyTransactionService::STATUS_OPEN]);
+            ->findBy(['status' => MoneyTransactionToBank::STATUS_OPEN]);
 
         foreach ($transactions as $transaction) {
             $user = $transaction->getUser();
-            $moneyService = new MoneyService($user, $this->em);
+            $moneyService = new MoneyService($user, new UserMoneyService($user), $this->em);
             $moneyService->transferMoney($transaction, $this->bankAPIService);
         }
 

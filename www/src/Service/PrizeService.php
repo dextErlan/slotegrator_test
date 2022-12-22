@@ -25,7 +25,7 @@ class PrizeService implements GiftServiceInterface
      * Физический предмет (случайный предмет из списка)
      *
      * @param int $limitForGifts
-     * @return array
+     * @return array{int, string}
      * @throws \Doctrine\ORM\Exception\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
@@ -46,10 +46,9 @@ class PrizeService implements GiftServiceInterface
     }
 
     /**
-     * @throws \Doctrine\ORM\Exception\ORMException
-     * @throws \Doctrine\ORM\OptimisticLockException
+     * @param UserPrize|Prize $entity
      */
-    private function saveEntity($entity)
+    private function saveEntity(object $entity): void
     {
         $this->entityManager->persist($entity);
         $this->entityManager->flush();
@@ -68,7 +67,7 @@ class PrizeService implements GiftServiceInterface
             throw new LimitForPrizesEndException("Лимит на призы исчерпан!");
         }
 
-        /** @var $prizeRepository PrizeRepository */
+        /** @var prizeRepository PrizeRepository */
         $prizeRepository = $this->entityManager->getRepository(Prize::class);
         $prizes = $prizeRepository->getAvailablePrizes();
 
@@ -86,7 +85,7 @@ class PrizeService implements GiftServiceInterface
      * @throws \Doctrine\ORM\Exception\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    private function decreaseNumberForPrize(Prize $prize)
+    private function decreaseNumberForPrize(Prize $prize): void
     {
         $prize->setNumber($prize->getNumber() - 1);
         $this->saveEntity($prize);

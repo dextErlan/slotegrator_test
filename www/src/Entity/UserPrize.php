@@ -12,7 +12,7 @@ class UserPrize
     const STATUS_REFUSED = 'refused';
 
     /** @ORM\Id @ORM\Column(type="integer") @ORM\GeneratedValue */
-    private $id;
+    private int $id;
 
     /** @ORM\Column(type="string") */
     private string $status;
@@ -26,6 +26,13 @@ class UserPrize
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function setId(int $id): UserPrize
+    {
+        $this->id = $id;
+
+        return $this;
     }
 
     public function getStatus(): string

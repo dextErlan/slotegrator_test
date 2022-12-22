@@ -23,7 +23,7 @@ class HttpKernel
         $this->setRoutes();
     }
 
-    private function setRoutes()
+    private function setRoutes(): void
     {
         $map = $this->routerContainer->getMap();
 

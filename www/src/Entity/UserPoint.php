@@ -24,6 +24,13 @@ class UserPoint
         return $this->id;
     }
 
+    public function setId(int $id): self
+    {
+        $this->id = $id;
+
+        return $this;
+    }
+
     public function getPoint(): int
     {
         return $this->point;

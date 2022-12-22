@@ -25,7 +25,7 @@ class MoneyTransactionServiceTest extends TestCase
         $this->service = new MoneyTransactionService();
     }
 
-    public function testOpenConvertTransaction()
+    public function testOpenConvertTransaction(): void
     {
         $transaction = $this->service->openConvertTransaction($this->user, 10);
 
@@ -35,7 +35,7 @@ class MoneyTransactionServiceTest extends TestCase
         $this->assertEquals(MoneyTransactionConvert::STATUS_OPEN, $transaction->getStatus());
     }
 
-    public function testOpenTransferTransaction()
+    public function testOpenTransferTransaction(): void
     {
         $bankAccount1 = new BankAccount();
         $bankAccount1->setUser($this->user)->setAccountNumber('123');
@@ -51,7 +51,7 @@ class MoneyTransactionServiceTest extends TestCase
         $this->assertEquals(MoneyTransactionToBank::STATUS_OPEN, $transaction->getStatus());
     }
 
-    public function testOpenTransferTransactionException()
+    public function testOpenTransferTransactionException(): void
     {
         $bankAccount1 = new BankAccount();
         $bankAccount1->setUser($this->user)->setAccountNumber('123');
@@ -65,7 +65,7 @@ class MoneyTransactionServiceTest extends TestCase
         $this->service->openTransferTransaction($this->user, 10, $bankAccount2);
     }
 
-    public function testChangeTransferTransactionStatusSuccess()
+    public function testChangeTransferTransactionStatusSuccess(): void
     {
         $transaction = new MoneyTransactionToBank();
         $transaction->setId(15);
@@ -79,7 +79,7 @@ class MoneyTransactionServiceTest extends TestCase
         $this->service->changeTransferTransactionStatus($transaction, MoneyTransactionToBank::STATUS_REFUND);
     }
 
-    public function testChangeTransferTransactionStatusRefund()
+    public function testChangeTransferTransactionStatusRefund(): void
     {
         $transaction = new MoneyTransactionToBank();
         $transaction->setId(15);
@@ -93,7 +93,7 @@ class MoneyTransactionServiceTest extends TestCase
         $this->service->changeTransferTransactionStatus($transaction, MoneyTransactionToBank::STATUS_SUCCESS);
     }
 
-    public function testChangeConvertTransactionStatusSuccess()
+    public function testChangeConvertTransactionStatusSuccess(): void
     {
         $transaction = new MoneyTransactionConvert();
         $transaction->setId(15);
@@ -107,7 +107,7 @@ class MoneyTransactionServiceTest extends TestCase
         $this->service->changeConvertTransactionStatus($transaction, MoneyTransactionConvert::STATUS_REFUND);
     }
 
-    public function testChangeConvertTransactionStatusRefund()
+    public function testChangeConvertTransactionStatusRefund(): void
     {
         $transaction = new MoneyTransactionConvert();
         $transaction->setId(15);

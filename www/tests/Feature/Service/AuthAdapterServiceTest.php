@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class AuthAdapterServiceTest extends TestCase
 {
-    public function testIdentityNotFound()
+    public function testIdentityNotFound(): void
     {
         $em = $this->getEntityManager();
 
@@ -21,7 +21,7 @@ class AuthAdapterServiceTest extends TestCase
         $this->assertEquals(Result::FAILURE_IDENTITY_NOT_FOUND, $result->getCode());
     }
 
-    public function testAuthenticateSuccess()
+    public function testAuthenticateSuccess(): void
     {
         $em = $this->getEntityManager();
 
@@ -32,7 +32,7 @@ class AuthAdapterServiceTest extends TestCase
         $this->assertNotEmpty($result->getIdentity());
     }
 
-    public function testPasswordNotValid()
+    public function testPasswordNotValid(): void
     {
         $em = $this->getEntityManager();
 

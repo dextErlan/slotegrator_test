@@ -12,7 +12,8 @@ interface RequestToBankAPIServiceInterface
      * @param int $sum
      * @param string $accountNumber
      * @throws BankAPIException
-     * @return array
+     *
+     * @return array{int, array<mixed>}
      */
     public function fetchTransferMoneyToBank(int $sum, string $accountNumber): array;
 }

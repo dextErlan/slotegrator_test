@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Service;
 
+use App\Entity\Prize;
 use App\Entity\User;
 use App\Exception\LimitForPrizesEndException;
 use App\Service\PrizeService;
@@ -12,16 +13,31 @@ class PrizeServiceTest extends TestCase
     private User $user;
     private PrizeService $prizeService;
 
+    /**
+     * @throws \Exception
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
         $em = $this->getEntityManager();
-        $this->user = $em->getRepository(User::class)->findOneBy(['email' => 'first@user.test']);
+        $user = $em->getRepository(User::class)->findOneBy(['email' => 'first@user.test']);
+
+        $prize = $em->getRepository(Prize::class)->findOneBy(['name' => 'Телевизор']);
+
+        if (!$user || !$prize) {
+            throw new \Exception('User first@user.test not found for test!');
+        }
+
+        $prize->setNumber(3);
+        $em->persist($prize);
+        $em->flush();
+
+        $this->user = $user;
         $this->prizeService = new PrizeService($this->user, $em);
     }
 
-    public function testGiveawayFailedWhenLimitEnd()
+    public function testGiveawayFailedWhenLimitEnd(): void
     {
         $limitForGifts = [0, -1];
 
@@ -32,7 +48,7 @@ class PrizeServiceTest extends TestCase
         }
     }
 
-    public function testGiveawayPrize()
+    public function testGiveawayPrize(): void
     {
         $limitForGifts = 5;
 

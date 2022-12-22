@@ -23,7 +23,7 @@ class PointService implements GiftServiceInterface
      * Бонусные баллы (случайная сумма в интервале)
      *
      * @param int $limitForGifts
-     * @return array
+     * @return array{int, string}
      * @throws \Doctrine\ORM\Exception\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
@@ -38,11 +38,11 @@ class PointService implements GiftServiceInterface
     /**
      * Добавляем бонусные баллы пользователю.
      *
-     * @param $sum
+     * @param int $sum
      * @throws \Doctrine\ORM\Exception\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    public function addPoint($sum)
+    public function addPoint(int $sum): void
     {
         $this->userPoint->setPoint($this->userPoint->getPoint() + $sum);
         $this->saveUserPoint();
@@ -68,7 +68,7 @@ class PointService implements GiftServiceInterface
      * @throws \Doctrine\ORM\Exception\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    private function saveUserPoint()
+    private function saveUserPoint(): void
     {
         $this->entityManager->persist($this->userPoint);
         $this->entityManager->flush();

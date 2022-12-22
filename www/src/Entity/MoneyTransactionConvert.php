@@ -67,7 +67,7 @@ class MoneyTransactionConvert
         return $this->exchangeRate;
     }
 
-    public function setExchangeRate(string $exchangeRate): self
+    public function setExchangeRate(float $exchangeRate): self
     {
         $this->exchangeRate = $exchangeRate;
 

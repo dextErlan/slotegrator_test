@@ -13,7 +13,7 @@ class LoginActionTest extends TestCase
         $this->getAuthService()->clearIdentity();
     }
 
-    public function testNotGetRequest()
+    public function testNotGetRequest(): void
     {
         $httpKernel = $this->getHttpKernel();
         $request = ServerRequestFactory::fromGlobals(
@@ -24,10 +24,12 @@ class LoginActionTest extends TestCase
         $response = $httpKernel->handle($request);
 
         $this->assertJson($response->getBody());
-        $this->assertEquals("Страница не найдена!", $response->getPayload());
+        if (method_exists($response, 'getPayload')) {
+            $this->assertEquals("Страница не найдена!", $response->getPayload());
+        }
     }
 
-    public function testFailedLogin()
+    public function testFailedLogin(): void
     {
         $httpKernel = $this->getHttpKernel();
         $request = ServerRequestFactory::fromGlobals(
@@ -43,11 +45,13 @@ class LoginActionTest extends TestCase
         $response = $httpKernel->handle($request);
 
         $this->assertJson($response->getBody());
-        $this->assertEquals(['error' => ['Логин и пароль не совпадают!']], $response->getPayload());
+        if (method_exists($response, 'getPayload')) {
+            $this->assertEquals(['error' => ['Логин и пароль не совпадают!']], $response->getPayload());
+        }
         $this->assertEquals(401, $response->getStatusCode());
     }
 
-    public function testNotSendPassword()
+    public function testNotSendPassword(): void
     {
         $httpKernel = $this->getHttpKernel();
         $request = ServerRequestFactory::fromGlobals(
@@ -62,11 +66,13 @@ class LoginActionTest extends TestCase
         $response = $httpKernel->handle($request);
 
         $this->assertJson($response->getBody());
-        $this->assertEquals(['error' => ['Не переданы имя пользователя и пароль!']], $response->getPayload());
+        if (method_exists($response, 'getPayload')) {
+            $this->assertEquals(['error' => ['Не переданы имя пользователя и пароль!']], $response->getPayload());
+        }
         $this->assertEquals(400, $response->getStatusCode());
     }
 
-    public function testLogin()
+    public function testLogin(): void
     {
         $httpKernel = $this->getHttpKernel();
         $request = ServerRequestFactory::fromGlobals(
@@ -82,9 +88,13 @@ class LoginActionTest extends TestCase
         $response = $httpKernel->handle($request);
 
         $this->assertJson($response->getBody());
-        $this->assertEquals("Вы вошли в систему!", $response->getPayload());
+        if (method_exists($response, 'getPayload')) {
+            $this->assertEquals("Вы вошли в систему!", $response->getPayload());
+        }
 
         $response = $httpKernel->handle($request);
-        $this->assertEquals("Вы уже вошли в систему!", $response->getPayload());
+        if (method_exists($response, 'getPayload')) {
+            $this->assertEquals("Вы уже вошли в систему!", $response->getPayload());
+        }
     }
 }

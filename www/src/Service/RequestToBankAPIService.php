@@ -9,7 +9,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class RequestToBankAPIService implements RequestToBankAPIServiceInterface
 {
-    private $client;
+    private HttpClientInterface $client;
 
     public function __construct(HttpClientInterface $client)
     {
@@ -21,7 +21,7 @@ class RequestToBankAPIService implements RequestToBankAPIServiceInterface
      *
      * @param int $sum
      * @param string $accountNumber
-     * @return array
+     * @return array{int, array<mixed>}
      * @throws ClientErrorResponseException
      * @throws ServerErrorResponseException
      * @throws TransferMoneyToBankException
@@ -40,12 +40,12 @@ class RequestToBankAPIService implements RequestToBankAPIServiceInterface
 
         $statusCode = $response->getStatusCode();
 
-        if ($statusCode >= 400) {
-            throw new ClientErrorResponseException("Ошибка в запросе к Bank API statusCode = $statusCode");
-        }
-
         if ($statusCode >= 500) {
             throw new ServerErrorResponseException("Ошибка в запросе к Bank API statusCode = $statusCode");
+        }
+
+        if ($statusCode >= 400) {
+            throw new ClientErrorResponseException("Ошибка в запросе к Bank API statusCode = $statusCode");
         }
 
         $content = $response->toArray();

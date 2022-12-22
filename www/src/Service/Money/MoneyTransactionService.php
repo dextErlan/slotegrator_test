@@ -11,12 +11,14 @@ use App\Exception\ChangeTransactionStatusException;
 
 class MoneyTransactionService
 {
+    /** @var array<mixed>  */
     private array $statusSequenceForMoneyTransactionConvert = [
         MoneyTransactionConvert::STATUS_OPEN => [
             MoneyTransactionConvert::STATUS_SUCCESS,
             MoneyTransactionConvert::STATUS_REFUND,
         ],
     ];
+    /** @var array<mixed>  */
     private array $statusSequenceForMoneyTransactionToBank = [
         MoneyTransactionToBank::STATUS_OPEN => [
             MoneyTransactionToBank::STATUS_SUCCESS,
@@ -45,7 +47,7 @@ class MoneyTransactionService
         return $moneyTransactionConvert;
     }
 
-    public function getExchangeRate()
+    public function getExchangeRate(): float
     {
         $config = require __DIR__ . '/../../../config/exchangeRate.php';
 
@@ -111,10 +113,10 @@ class MoneyTransactionService
 
     /**
      * @param MoneyTransactionConvert $transactionConvert
-     * @param $newStatus
+     * @param string $newStatus
      * @throws ChangeTransactionStatusException
      */
-    public function changeConvertTransactionStatus(MoneyTransactionConvert $transactionConvert,  $newStatus): void
+    public function changeConvertTransactionStatus(MoneyTransactionConvert $transactionConvert, string $newStatus): void
     {
         $currentStatus = $transactionConvert->getStatus();
 

@@ -11,7 +11,7 @@ use App\Exception\FundsNotAvailableForUser;
 use App\Exception\TransferException;
 use App\Service\Money\UserMoneyService;
 use App\Service\MoneyService;
-use App\Service\PointServiceInterface;
+use App\Service\PointService;
 use App\Service\RequestToBankAPIServiceInterface;
 use Exception;
 use Tests\TestCase;
@@ -26,13 +26,18 @@ class MoneyServiceTest extends TestCase
         parent::setUp();
 
         $em = $this->getEntityManager();
-        $this->user = $em->getRepository(User::class)->findOneBy(['email' => 'first@user.test']);
+        $user = $em->getRepository(User::class)->findOneBy(['email' => 'first@user.test']);
+
+        if (!$user) {
+            throw new \Exception('User first@user.test not found for test!');
+        }
+        $this->user = $user;
         $userMoneyService = new UserMoneyService($this->user);
         $this->moneyService = new MoneyService($this->user, $userMoneyService, $em);
         $userMoneyService->addMoney(100);
     }
 
-    public function testGiveawayZeroWhenLimitEnd()
+    public function testGiveawayZeroWhenLimitEnd(): void
     {
         $limitForGifts = [0, -1];
 
@@ -44,19 +49,23 @@ class MoneyServiceTest extends TestCase
         }
     }
 
-    public function testGiveawayMoney()
+    public function testGiveawayMoney(): void
     {
         $limitForGifts = 54;
-        $moneyInApp = $this->user->getUserMoney()->getMoneyInApp();
+        $userMoney = $this->user->getUserMoney();
+        $moneyInApp = is_null($userMoney) ? 0 : $userMoney->getMoneyInApp();
 
         list($giftCount, $giftDescription) = $this->moneyService->giveaway($limitForGifts);
 
         $this->assertGreaterThan(0, $giftCount);
         $this->assertLessThanOrEqual($limitForGifts, $giftCount);
-        $this->assertEquals($moneyInApp + $giftCount, $this->user->getUserMoney()->getMoneyInApp());
+
+        $userMoney2 = $this->user->getUserMoney();
+        $moneyInApp2 = is_null($userMoney2) ? 0 : $userMoney2->getMoneyInApp();
+        $this->assertEquals($moneyInApp + $giftCount, $moneyInApp2);
     }
 
-    public function testOpenTransferWithWrongBankAccount()
+    public function testOpenTransferWithWrongBankAccount(): void
     {
         $sum = 10;
         $user2 = new User();
@@ -70,9 +79,10 @@ class MoneyServiceTest extends TestCase
         $this->moneyService->setTaskForTransferMoney($sum, $bankAccount);
     }
 
-    public function testOpenTransferWhenMoneyNotEnough()
+    public function testOpenTransferWhenMoneyNotEnough(): void
     {
-        $moneyInApp = $this->user->getUserMoney()->getMoneyInApp();
+        $userMoney = $this->user->getUserMoney();
+        $moneyInApp = is_null($userMoney) ? 0 : $userMoney->getMoneyInApp();
         $sum = $moneyInApp + 10;
         $bankAccount = ($this->user->getBankAccount())[0];
 
@@ -81,18 +91,22 @@ class MoneyServiceTest extends TestCase
         $this->moneyService->setTaskForTransferMoney($sum, $bankAccount);
     }
 
-    public function testOpenTransferSuccessAndRefund()
+    public function testOpenTransferSuccessAndRefund(): void
     {
-        $moneyInApp = $this->user->getUserMoney()->getMoneyInApp();
-        $blocked = $this->user->getUserMoney()->getBlocked();
+        $userMoney = $this->user->getUserMoney();
+        $moneyInApp = is_null($userMoney) ? 0 : $userMoney->getMoneyInApp();
+        $blocked = is_null($userMoney) ? 0 : $userMoney->getBlocked();
         $sum = 10;
         $bankAccount = ($this->user->getBankAccount())[0];
 
         $transaction = $this->moneyService->setTaskForTransferMoney($sum, $bankAccount);
 
         // Проверяем что деньги заблокировались и создалась запись в транзакциях
-        $this->assertEquals($moneyInApp - $sum, $this->user->getUserMoney()->getMoneyInApp());
-        $this->assertEquals($blocked + $sum, $this->user->getUserMoney()->getBlocked());
+        $userMoney2 = $this->user->getUserMoney();
+        $moneyInApp2 = is_null($userMoney2) ? 0 : $userMoney2->getMoneyInApp();
+        $this->assertEquals($moneyInApp - $sum, $moneyInApp2);
+        $blocked2 = is_null($userMoney2) ? 0 : $userMoney2->getBlocked();
+        $this->assertEquals($blocked + $sum, $blocked2);
         $this->assertInstanceOf(MoneyTransactionToBank::class, $transaction);
         $this->assertEquals($sum, $transaction->getSum());
         $this->assertEquals(MoneyTransactionToBank::STATUS_OPEN, $transaction->getStatus());
@@ -105,25 +119,32 @@ class MoneyServiceTest extends TestCase
             $this->moneyService->transferMoney($transaction, $bankAPIService);
         } catch(Exception $e){
             // Проверяем что деньги вернулись
-            $this->assertEquals($moneyInApp, $this->user->getUserMoney()->getMoneyInApp());
-            $this->assertEquals($blocked, $this->user->getUserMoney()->getBlocked());
+            $userMoney3 = $this->user->getUserMoney();
+            $moneyInApp3 = is_null($userMoney3) ? 0 : $userMoney3->getMoneyInApp();
+            $this->assertEquals($moneyInApp, $moneyInApp3);
+            $blocked3 = is_null($userMoney3) ? 0 : $userMoney3->getBlocked();
+            $this->assertEquals($blocked, $blocked3);
             $this->assertEquals(MoneyTransactionToBank::STATUS_REFUND, $transaction->getStatus());
             $this->assertInstanceOf(TransferException::class, $e);
         }
     }
 
-    public function testTransferSuccess()
+    public function testTransferSuccess(): void
     {
-        $moneyInApp = $this->user->getUserMoney()->getMoneyInApp();
-        $blocked = $this->user->getUserMoney()->getBlocked();
+        $userMoney = $this->user->getUserMoney();
+        $moneyInApp = is_null($userMoney) ? 0 : $userMoney->getMoneyInApp();
+        $blocked = is_null($userMoney) ? 0 : $userMoney->getBlocked();
         $sum = 10;
         $bankAccount = ($this->user->getBankAccount())[0];
 
         $transaction = $this->moneyService->setTaskForTransferMoney($sum, $bankAccount);
 
         // Проверяем что деньги заблокировались и создалась запись в транзакциях
-        $this->assertEquals($moneyInApp - $sum, $this->user->getUserMoney()->getMoneyInApp());
-        $this->assertEquals($blocked + $sum, $this->user->getUserMoney()->getBlocked());
+        $userMoney2 = $this->user->getUserMoney();
+        $moneyInApp2 = is_null($userMoney2) ? 0 : $userMoney2->getMoneyInApp();
+        $this->assertEquals($moneyInApp - $sum, $moneyInApp2);
+        $blocked2 = is_null($userMoney2) ? 0 : $userMoney2->getBlocked();
+        $this->assertEquals($blocked + $sum, $blocked2);
         $this->assertInstanceOf(MoneyTransactionToBank::class, $transaction);
         $this->assertEquals($sum, $transaction->getSum());
         $this->assertEquals(MoneyTransactionToBank::STATUS_OPEN, $transaction->getStatus());
@@ -135,30 +156,34 @@ class MoneyServiceTest extends TestCase
         $this->moneyService->transferMoney($transaction, $bankAPIService);
 
         // Проверяем что списались
-        $this->assertEquals($moneyInApp - $sum, $this->user->getUserMoney()->getMoneyInApp());
-        $this->assertEquals($blocked, $this->user->getUserMoney()->getBlocked());
+        $userMoney3 = $this->user->getUserMoney();
+        $moneyInApp3 = is_null($userMoney3) ? 0 : $userMoney3->getMoneyInApp();
+        $this->assertEquals($moneyInApp - $sum, $moneyInApp3);
+        $blocked3 = is_null($userMoney3) ? 0 : $userMoney3->getBlocked();
+        $this->assertEquals($blocked, $blocked3);
         $this->assertEquals(MoneyTransactionToBank::STATUS_SUCCESS, $transaction->getStatus());
     }
 
-    public function testTransferWithWrongBankAccount()
+    public function testTransferWithWrongBankAccount(): void
     {
         // TODO
         $this->assertTrue(true);
     }
 
-    public function testTransferWhenMoneyNotEnough()
+    public function testTransferWhenMoneyNotEnough(): void
     {
         // TODO
         $this->assertTrue(true);
     }
 
-    public function testOpenConvertSuccessAndRefund()
+    public function testOpenConvertSuccessAndRefund(): void
     {
-        $moneyInApp = $this->user->getUserMoney()->getMoneyInApp();
+        $userMoney = $this->user->getUserMoney();
+        $moneyInApp = is_null($userMoney) ? 0 : $userMoney->getMoneyInApp();
         $sum = $moneyInApp;
-        $blocked = $this->user->getUserMoney()->getBlocked();
+        $blocked = is_null($userMoney) ? 0 : $userMoney->getBlocked();
 
-        $pointService = $this->createMock(PointServiceInterface::class);
+        $pointService = $this->createMock(PointService::class);
         $pointService->method('addPoint')
             ->willThrowException(new Exception);
 
@@ -166,24 +191,31 @@ class MoneyServiceTest extends TestCase
             $this->moneyService->convertToUserPoints($sum, $pointService);
         } catch(Exception $e){
             // Проверяем что деньги остались в прежнем состоянии
-            $this->assertEquals($moneyInApp, $this->user->getUserMoney()->getMoneyInApp());
-            $this->assertEquals($blocked, $this->user->getUserMoney()->getBlocked());
+            $userMoney2 = $this->user->getUserMoney();
+            $moneyInApp2 = is_null($userMoney2) ? 0 : $userMoney2->getMoneyInApp();
+            $this->assertEquals($moneyInApp, $moneyInApp2);
+            $blocked2 = is_null($userMoney2) ? 0 : $userMoney2->getBlocked();
+            $this->assertEquals($blocked, $blocked2);
             $this->assertInstanceOf(TransferException::class, $e);
         }
     }
 
-    public function testConvertSuccess()
+    public function testConvertSuccess(): void
     {
-        $moneyInApp = $this->user->getUserMoney()->getMoneyInApp();
-        $blocked = $this->user->getUserMoney()->getBlocked();
+        $userMoney = $this->user->getUserMoney();
+        $moneyInApp = is_null($userMoney) ? 0 : $userMoney->getMoneyInApp();
+        $blocked = is_null($userMoney) ? 0 : $userMoney->getBlocked();
         $sum = 15;
 
-        $pointService = $this->createMock(PointServiceInterface::class);
+        $pointService = $this->createMock(PointService::class);
 
         $this->moneyService->convertToUserPoints($sum, $pointService);
 
         // Проверяем что списались
-        $this->assertEquals($moneyInApp - $sum, $this->user->getUserMoney()->getMoneyInApp());
-        $this->assertEquals($blocked, $this->user->getUserMoney()->getBlocked());
+        $userMoney2 = $this->user->getUserMoney();
+        $moneyInApp2 = is_null($userMoney2) ? 0 : $userMoney2->getMoneyInApp();
+        $this->assertEquals($moneyInApp - $sum, $moneyInApp2);
+        $blocked2 = is_null($userMoney2) ? 0 : $userMoney2->getBlocked();
+        $this->assertEquals($blocked, $blocked2);
     }
 }

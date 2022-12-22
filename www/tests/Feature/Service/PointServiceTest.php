@@ -11,16 +11,24 @@ class PointServiceTest extends TestCase
     private User $user;
     private PointService $pointService;
 
+    /**
+     * @throws \Exception
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
         $em = $this->getEntityManager();
-        $this->user = $em->getRepository(User::class)->findOneBy(['email' => 'first@user.test']);
+        $user = $em->getRepository(User::class)->findOneBy(['email' => 'first@user.test']);
+
+        if (!$user) {
+            throw new \Exception('User first@user.test not found for test!');
+        }
+        $this->user = $user;
         $this->pointService = new PointService($this->user, $em);
     }
 
-    public function testGiveawayPoint()
+    public function testGiveawayPoint(): void
     {
         $limitForGifts = 5;
         $userPoints = empty($this->user->getUserPoint()) ? 0 : $this->user->getUserPoint()->getPoint();
@@ -29,6 +37,8 @@ class PointServiceTest extends TestCase
 
         $this->assertGreaterThan(1, $giftCount);
         $this->assertNotEmpty($giftDescription);
-        $this->assertEquals($userPoints + $giftCount, $this->user->getUserPoint()->getPoint());
+        $userPoint = $this->user->getUserPoint();
+        $point = is_null($userPoint) ? 0 : $userPoint->getPoint();
+        $this->assertEquals($userPoints + $giftCount, $point);
     }
 }

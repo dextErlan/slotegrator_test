@@ -9,7 +9,7 @@ interface GiftServiceInterface
      * Размер подарка не должен превышать переданные лимиты.
      *
      * @param int $limitForGifts
-     * @return array
+     * @return array{int, string}
      */
     public function giveaway(int $limitForGifts): array;
 }

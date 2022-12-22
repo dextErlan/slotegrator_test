@@ -17,6 +17,7 @@
         "symfony/http-client": "^5.4"
     },
     "require-dev": {
+        "phpstan/phpstan": "^1.9",
         "phpunit/phpunit": "^9"
     },
     "autoload": {

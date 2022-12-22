@@ -18,7 +18,9 @@ class BankAccount
     /** @ORM\ManyToOne(targetEntity="User", inversedBy="bankAccount") */
     private User $user;
 
-    /** @ORM\OneToMany(targetEntity="MoneyTransactionToBank", mappedBy="bankAccount") */
+    /**
+     * @ORM\OneToMany(targetEntity="MoneyTransactionToBank", mappedBy="bankAccount")
+     */
     private Collection $moneyTransactionToBank;
 
     public function __construct()
@@ -29,6 +31,13 @@ class BankAccount
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function setId(int $id): BankAccount
+    {
+        $this->id = $id;
+
+        return $this;
     }
 
     public function getAccountNumber(): string

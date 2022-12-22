@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 
 class BankAccountTest extends TestCase
 {
-    public function testIsBelongsToUser()
+    public function testIsBelongsToUser(): void
     {
         $user1 = new User();
         $user1->setEmail('ni@site.com');

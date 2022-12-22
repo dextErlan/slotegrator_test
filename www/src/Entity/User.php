@@ -18,13 +18,19 @@ class User
     /** @ORM\Column(type="string") */
     private string $password;
 
-    /** @ORM\OneToMany(targetEntity="MoneyTransactionToBank", mappedBy="user") */
+    /**
+     * @ORM\OneToMany(targetEntity="MoneyTransactionToBank", mappedBy="user")
+     */
     private Collection $moneyTransactionToBank;
 
-    /** @ORM\OneToMany(targetEntity="BankAccount", mappedBy="user") */
+    /**
+     * @ORM\OneToMany(targetEntity="BankAccount", mappedBy="user")
+     */
     private Collection $bankAccount;
 
-    /** @ORM\OneToMany(targetEntity="MoneyTransactionConvert", mappedBy="user") */
+    /**
+     * @ORM\OneToMany(targetEntity="MoneyTransactionConvert", mappedBy="user")
+     */
     private Collection $moneyTransactionConvert;
 
     /**
@@ -57,12 +63,19 @@ class User
         return $this->id;
     }
 
+    public function setId(int $id): self
+    {
+        $this->id = $id;
+
+        return $this;
+    }
+
     public function getEmail(): string
     {
         return $this->email;
     }
 
-    public function setEmail(string $email)
+    public function setEmail(string $email): void
     {
         $this->email = $email;
     }
@@ -72,7 +85,7 @@ class User
         return $this->password;
     }
 
-    public function setPassword(string $password)
+    public function setPassword(string $password): void
     {
         $this->password = password_hash($password,PASSWORD_DEFAULT);
     }

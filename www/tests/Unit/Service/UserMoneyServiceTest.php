@@ -23,7 +23,7 @@ class UserMoneyServiceTest extends TestCase
         $this->moneyService = new UserMoneyService($this->user);
     }
 
-    public function testGetNewUserMoney()
+    public function testGetNewUserMoney(): void
     {
         $userMoney = $this->moneyService->getUserMoney();
 
@@ -32,7 +32,7 @@ class UserMoneyServiceTest extends TestCase
         $this->assertEquals(0, $userMoney->getBlocked());
     }
 
-    public function testAddMoney()
+    public function testAddMoney(): void
     {
         $userMoney = $this->moneyService->getUserMoney();
         $userMoney->setMoneyInApp(100);
@@ -44,7 +44,7 @@ class UserMoneyServiceTest extends TestCase
         $this->assertEquals(100, $userMoney->getBlocked());
     }
 
-    public function testWithdrawalBlockMoney()
+    public function testWithdrawalBlockMoney(): void
     {
         $userMoney = $this->moneyService->getUserMoney();
         $userMoney->setMoneyInApp(90);
@@ -55,14 +55,14 @@ class UserMoneyServiceTest extends TestCase
         $this->assertEquals(40, $userMoney->getBlocked());
     }
 
-    public function testWithdrawalBlockMoneyException()
+    public function testWithdrawalBlockMoneyException(): void
     {
         $this->expectException(BlockedSumNotValid::class);
 
         $this->moneyService->withdrawalBlockMoney(10);
     }
 
-    public function testBlockMoney()
+    public function testBlockMoney(): void
     {
         $userMoney = $this->moneyService->getUserMoney();
         $userMoney->setMoneyInApp(70);
@@ -74,14 +74,14 @@ class UserMoneyServiceTest extends TestCase
         $this->assertEquals(35, $userMoney->getBlocked());
     }
 
-    public function testBlockMoneyException()
+    public function testBlockMoneyException(): void
     {
         $this->expectException(FundsNotAvailableForUser::class);
 
         $this->moneyService->blockMoney(10);
     }
 
-    public function testRefundMoney()
+    public function testRefundMoney(): void
     {
         $userMoney = $this->moneyService->getUserMoney();
         $userMoney->setMoneyInApp(100);
@@ -93,7 +93,7 @@ class UserMoneyServiceTest extends TestCase
         $this->assertEquals(90, $userMoney->getBlocked());
     }
 
-    public function testRefundMoneyException()
+    public function testRefundMoneyException(): void
     {
         $this->expectException(BlockedSumNotValid::class);
 
